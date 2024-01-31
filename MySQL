@@ -298,3 +298,57 @@ SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 
+
+--Creación de un Dump de nuestra base de datos con las instrucciones de triggers,rutinas,etc(dump es la trasnferencia de la base de datos con todo nuestro cigo, esto lo hacemos desde la terminal)
+EJ:D\curso\mysqldum -u root -p -h localhost --triggers --routines curso > Dump02.sql(nombre de el archivo donde almacenamos el db)
+--ahora como realizamos el restort o la restauración
+EJ:D\curso\mysqldum -u root -p -h localhost < Dump02.sql
+
+
+-- Practica SQL Profesional Avanzada
+
+-- Deseamos conocer.Con cuantas 'Comedias' trabajamos en la empresa ?
+
+SELECT COUNT(fc.film_id) AS Comedias
+FROM film_category fc
+JOIN category c 
+ON fc.category_id=c.category_id
+WHERE c.name = "Comedy";
+
+-- Cual es el actor o actriz que mas películas ha filmado ?
+
+SELECT a.last_name AS actor_que_mas_peliculas_filmo, COUNT(fa.film_id) AS cantidad
+FROM actor a
+JOIN film_actor fa
+ON a.actor_id=fa.actor_id
+GROUP BY actor_que_mas_peliculas_filmo
+ORDER BY COUNT(*) DESC
+LIMIT 10;
+
+-- Que empleado del staff ha alquilado mas películas de la actriz del ejercicio 2 ?
+
+SELECT s.staff_id,s.first_name,s.last_name,COUNT(s.staff_id) AS Cantidad_Vista
+FROM staff s
+	JOIN rental r ON r.staff_id = s.staff_id
+	JOIN inventory i ON r.inventory_id = i.inventory_id
+	JOIN film f ON f.film_id = i.film_id
+	JOIN film_actor fa ON fa.film_id = f.film_id
+WHERE fa.actor_id = 107
+GROUP BY s.staff_id;
+
+-- cuantas películas con rating PG-13 que hay en el store nro 2 ha alquilado el mejor cliente de todos ??
+
+SELECT COUNT(*) AS Peliculas
+FROM film f
+	JOIN inventory i ON i.film_id = f.film_id
+	JOIN rental r ON i.inventory_id = r.inventory_id
+WHERE f.film_id IN ( SELECT i.film_id
+							FROM film f
+								JOIN inventory i ON f.film_id = i.film_id
+							WHERE f.rating = 'PG-13' AND i.store_id = 2
+							GROUP BY i.film_id) AND
+		r.customer_id IN (SELECT ren.customer_id FROM (SELECT r.customer_id FROM rental r
+								GROUP BY r.customer_id
+								ORDER BY COUNT(r.customer_id) DESC
+								LIMIT 1) AS ren) AND
+		i.store_id=2;	
